@@ -1,0 +1,44 @@
+project:
+  type: website
+  output-dir: docs
+  render:
+    - index.qmd
+    - ai-use.qmd
+    - case_study.qmd
+  resources:
+    - .nojekyll
+
+website:
+  title: "STAT 330 Final Project"
+  search: false
+  navbar:
+    background: "#17324d"
+    foreground: light
+    collapse: true
+    left:
+      - text: "Home"
+        href: index.qmd
+      - text: "Case Study"
+        href: case_study.qmd
+      - text: "AI Use"
+        href: ai-use.qmd
+  back-to-top-navigation: true
+  page-footer:
+    center: "STAT 330 portfolio project"
+    border: true
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    toc-depth: 3
+    smooth-scroll: true
+    code-fold: true
+    code-summary: "Show code"
+    embed-resources: true
+
+execute:
+  warning: false
+  message: false
+  error: false
