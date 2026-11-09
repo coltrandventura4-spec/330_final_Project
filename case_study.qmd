@@ -1,0 +1,18 @@
+```{r}
+mortality_dat <- read.csv("Adult mortality rate (2019-2021).csv")
+
+mort_mod <- lm (Average_CDR ~ Average_HEXP... + Average_GDP_per_capita..., mortality_dat)
+
+
+mort_mod2 <- lm( Average_CDR ~ Average_HEXP... + Average_GDP_per_capita... +
+    relevel(factor(Development_level), ref = "Short"),
+  data = mortality_dat)
+
+summary(mort_mod2)
+
+plot(mort_mod, which = 1)
+plot(mort_mod2, which = 1)
+
+shapiro.test(residuals(mort_mod))
+shapiro.test(residuals(mort_mod2))
+```

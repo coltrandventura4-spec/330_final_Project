@@ -1,37 +1,47 @@
 ---
 title: "AI Use and Verification"
 description: "A concise record of AI-supported work on this project."
-author: "Replace with all group members' names"
+author: "Coltran Ventura, Jonathan Hooton"
 ---
 
 This page is a work log, not a second report. Short bullets are welcome. It is separate from the final case study and does not count toward the 750 to 1,000 word range.
 
 ## Starting point
 
-**AI system and date:** Replace.
+**AI system and date:** Chat gpt, 11/9/26
 
 **Before using AI for the required extension, briefly state your question, course-based core model, baseline result, and the specific limitation or opportunity you wanted to address.**
+Questions: How do factors like average gdp and health expenditure affect mortality rate across countries. 
+Baseline model: Simple Linear Regression
+Baseline Result: Low R-squared and adjusted R-squared. F test shows that there is at least 1 predictor explaining average CDR.
+Limitation we want to address: Is there a model that would better fit our data. 
+
 
 ## Substantive prompts
 
 Paste the exact prompts that shaped the extension. Include the customized extension-selection prompt from the checkpoint and any important implementation follow-ups. Delete unused prompt blocks.
 
-> Replace with an exact prompt.
+> I have a data set with 155 countries as rows. the columns are average population in thousands of people, average GDP, average Health expenditure, AMR_female per 1000 female adults, AMR_male per 1000 male adults, and average CDR per country. Currently, I am planning to use a simple linear regression model to explore how the other factors affect mortality rate. What are some limitations can you identify that might come up from my proposed plan. Give me some Ideas I can use to improve my plan
 
 > Replace with another exact prompt, if needed.
 
 ## My decisions
 
-- **Accepted:** What useful advice did you use?
-- **Changed:** What did you adapt to fit your data or goals?
-- **Rejected or corrected:** What advice was unsuitable, unnecessary, or wrong?
+- **Accepted:** Include Indicator functions in our model to account for region
+- **Changed:** We are going to utilize the development level variable to group our data by?
+- **Rejected or corrected:** There was a lot if information and not all of it was exactly relevant to our project. Chat gpt was suggesting adding new data that we don't have access to, to our current data. If we had more time and resources this would be a useful change
 
 **Connection to the final case study:** Identify where the extension's method and result appear on the final page and how they strengthen the course-based analysis.
 
 ## Independent verification
 
-1. **Check and result:** Replace with an official source, diagnostic, simulation, manual calculation, comparison with a known method, or another suitable check.
-2. **Check and result:** Replace with a different check and what you learned.
+1. **Check and result:** The change we implemented was using Development_level as an indicator and "Short" as the baseline. This is the updated model. mort_mod2 <- lm(
+  Average_CDR ~ Average_HEXP + Average_GDP_per_capita +
+    relevel(factor(Development_level), ref = "Short"),
+  data = mortality_dat
+). It resulted in a more normal residual vs fitted plot(which can be seen in case_study.qmd). More testing is needed to determine the usefulness of the model. 
+
+2. **Check and result:** Independent test two: Shapiro-Wilkes normality test of the residuals gave a low p-value (.0002099). This shows that our model is not normally distributed. We will spend more time finding model that can help us normalize our data for meaningul analysis. 
 
 Link or cite verification sources where appropriate. A second AI response does not count as independent verification.
 
@@ -39,6 +49,8 @@ Link or cite verification sources where appropriate. A second AI response does n
 
 **State one important uncertainty, failure mode, or limitation that remains.**
 
+
 ## Other AI use, if any
 
 **Briefly disclose earlier debugging, proofreading, or other AI assistance. Write “None” if there was no other use.**
+None
