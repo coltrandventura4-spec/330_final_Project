@@ -1,0 +1,63 @@
+
+
+
+```{r}
+library(dplyr)
+
+mortality <- read.csv("portfolio/Adult mortality rate (2019-2021).csv")
+
+mort_cv <-  mortality|> #31 observations per fold so trainging data will have 124 observations
+  mutate(
+    fold = sample(rep(1:5, length.out = n()))
+  )
+
+mort_cv <- mort_cv|>
+    dplyr::rename(avg_pop = Average_Pop.thousands.people.)  # Average Population per 1000 people
+
+colnames(mort_cv)[4] <- "avg_gdp"
+colnames(mort_cv)[6] <- "avg_hexp"
+```
+
+```{r}
+ns5 <- lm(average_CDR ~ avg_hexp*Development_level)
+
+linear_fit <- lm(Average_CDR ~ avg_hexp + Development_level, data = mort_cv)
+
+anova(linear_fit, ns5)
+```
+
+```{r}
+degrees <- c(2, 4, 6, 10, 15)
+
+grouped_cv_ns <- function(df) {
+  fold_results <- map_dfr(1:5, function(f) {
+    train <- filter(mort_cv, fold != f)
+    test  <- filter(mort_cv, fold == f)
+
+    fit <- lm(
+      Average_CDR ~ ns(avg_pop, df = df),
+      data = train
+    )
+
+    tibble(
+      fold = f,
+      rmse = sqrt(mean((test$avg_hexp - predict(fit, test))^2))
+    )
+  })
+
+  summarise(
+    fold_results,
+    df = df,
+    mean_rmse = mean(rmse),
+    se_rmse = sd(rmse) / sqrt(n())
+  )
+}
+
+fold_results <- map_dfr(degrees, function(d){
+  grouped_cv_ns(df = d)
+}
+)
+fold_results
+
+selection_options
+```
