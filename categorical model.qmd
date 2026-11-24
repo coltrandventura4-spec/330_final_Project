@@ -1,0 +1,6 @@
+
+```{r}
+mort_lm <- lm(Average_CDR ~ fct_relevel(Continent, "other") + fct_relevel(Development_level, "short") PPGDP, data = mortality)
+
+print(summary(mort_lm))
+```

@@ -1,10 +1,15 @@
+### To do:
 
-
+-create indicators for groups\
+-test for meaningful interactions so we can determine whether or not we need an additive model or an interactive model\
+-Determine our Model using cross validation\
+-draw conclusions.\
 
 ```{r}
 library(dplyr)
-
-mortality <- read.csv("portfolio/Adult mortality rate (2019-2021).csv")
+library(multcomp)
+library(forcats)
+mortality <- read.csv("Adult mortality rate (2019-2021).csv")
 
 mort_cv <-  mortality|> #31 observations per fold so trainging data will have 124 observations
   mutate(
@@ -18,6 +23,103 @@ colnames(mort_cv)[4] <- "avg_gdp"
 colnames(mort_cv)[6] <- "avg_hexp"
 ```
 
+```{r}
+#model with indicator functions
+mort_lm <- lm(Average_CDR ~ fct_relevel(Continent, "North America") + fct_relevel(Development_level, "short") + avg_pop + avg_hexp, data = mort_cv)
+
+print(summary(mort_lm))
+
+#model with indicator functions & interactions
+mort_lm_int <- lm(Average_CDR ~ fct_relevel(Continent, "North America") + fct_relevel(Development_level, "short") + avg_pop + avg_hexp + fct_relevel(Development_level, "short")*avg_pop + fct_relevel(Development_level, "short")*avg_hexp + fct_relevel(Continent, "North America")*avg_pop + fct_relevel(Continent, "North America")*avg_hexp , data = mort_cv)
+```
+
+```{r}
+#anova test to determine whether interactions improve the model
+
+anova(mort_lm, mort_lm_int)
+
+#low p-value 0.001199 so we reject the null hypothesis that the models are the same. 
+```
+
+```{r}
+plot(mort_lm_int, which = 1) #fitted vs residuals plot
+plot(mort_lm_int, which = 2) # qq plot looks mostly normal with a little right skew
+shapiro.test(residuals(mort_lm_int)) # p-value is 0.3231 which fail to reject Ho that the distribution's residulas are is non-normal
+hist(residuals(mort_lm_int))# histogra of residuals looks normally distributed
+
+plot(mort_lm_int, which = 5)#Residuals vs leverage
+plot(mort_lm_int, which = 3)# Scale-Location
+plot(mort_lm_int, which = 4)# cook's distance
+```
+
+```{r}
+library(forcats)
+# Loads forcats, which provides fct_relevel(). Not strictly needed for this code,
+# but your model formula uses it, so it's harmless to keep.
+
+n <- nobs(mort_lm_int)
+# n = number of observations actually used to fit the model
+# (rows dropped for missing values are not counted).
+
+p <- sum(!is.na(coef(mort_lm_int)))
+# p = number of estimated coefficients, including the intercept.
+# coef() returns all coefficients; is.na() marks any R couldn't estimate
+# (e.g., empty interaction combinations); !is.na() flips that, and sum()
+# counts the TRUEs. So p counts only real, estimated parameters.
+
+used_rows <- as.numeric(rownames(model.frame(mort_lm_int)))
+# model.frame() returns the exact data the model used, after dropping NAs.
+# rownames() pulls their original row labels from mort_cv, and as.numeric()
+# turns those labels into numbers so they can be used to index mort_cv.
+
+lev_df <- data.frame(
+# Builds a table with one row per observation used in the model.
+
+  row         = used_rows,
+  # Original row number in mort_cv, so you can locate each observation.
+
+  Continent   = mort_cv$Continent[used_rows],
+  # The observation's continent, pulled from the original data.
+
+  Development = mort_cv$Development_level[used_rows],
+  # The observation's development level.
+
+  avg_pop     = mort_cv$avg_pop[used_rows],
+  # The observation's average population (a predictor).
+
+  avg_hexp    = mort_cv$avg_hexp[used_rows],
+  # The observation's average health expenditure (a predictor).
+
+  hat         = hatvalues(mort_lm_int),
+  # Leverage: how unusual the observation's predictor values are (ranges 0 to 1).
+
+  stud        = rstudent(mort_lm_int),
+  # Studentized residual: how far the observed CDR is from the prediction,
+  # in standard-error units, with that observation left out of the fit.
+
+  cooksD      = cooks.distance(mort_lm_int)
+  # Cook's distance: how much the fitted model changes if this observation
+  # is removed. Combines leverage and residual size.
+)
+
+lev_df$high_lev  <- lev_df$hat > 2 * p / n
+# TRUE if leverage exceeds the common 2p/n cutoff.
+
+lev_df$big_resid <- abs(lev_df$stud) > 2
+# TRUE if the studentized residual is beyond ±2 (an unusually poor fit).
+# abs() catches both large positive and large negative residuals.
+
+lev_df$high_cook <- lev_df$cooksD > 4 / n
+# TRUE if Cook's distance exceeds the 4/n rule of thumb (potentially influential).
+
+flagged <- subset(lev_df, high_lev | big_resid | high_cook)
+# Keeps only rows that fail at least one check. "|" means OR.
+
+flagged[order(-flagged$hat), ]
+# Prints the flagged rows sorted from highest to lowest leverage.
+# order() sorts ascending, so the minus sign reverses it. The empty spot
+# after the comma means "keep all columns."
+```
 ```{r}
 ns5 <- lm(average_CDR ~ avg_hexp*Development_level)
 
